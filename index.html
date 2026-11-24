@@ -3,272 +3,326 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>فحص ملف الإكسل</title>
-<link rel="icon" type="image/png" href="logo.png">
+<title>فحص الأصناف والألوان</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--primary:#2563eb;--primary-dark:#1d4ed8;--bg:#f3f6fb;--text:#172033;--muted:#64748b;--border:#e2e8f0;--ok:#15803d;--err:#b91c1c;--warn:#b45309}
+:root{
+  --paper:#f3f5f4; --card:#ffffff; --ink:#14231f; --muted:#5b6b66; --line:#d9e0dd;
+  --brand:#0d5c52; --brand-d:#09443d; --brand-soft:#e3f1ee;
+  --ok:#15803d; --ok-soft:#e6f4ea;
+  --err:#b42318; --err-soft:#fdecea;
+  --warn:#a15c07; --warn-soft:#fdf3e1;
+  --info:#1d4f91; --info-soft:#e8f0fb;
+}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}
-.page{max-width:760px;margin:0 auto;padding:24px 14px}
-.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:14px;box-shadow:0 12px 35px rgba(15,23,42,.06)}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-h1{font-size:23px;margin:0}
-h2{font-size:18px;margin:0 0 10px}
-.hint{color:var(--muted);font-size:13px;line-height:1.9;margin:0 0 14px}
-.chips{display:flex;gap:6px;flex-wrap:wrap;direction:ltr;justify-content:flex-end;margin-bottom:12px}
-.chip{font-family:Arial,sans-serif;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:#eff6ff;color:var(--primary-dark);border:1px solid #bfdbfe}
-button{min-height:48px;border:0;border-radius:12px;background:var(--primary);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;padding:12px 16px}
-button:hover{background:var(--primary-dark)}
-button:disabled{opacity:.55;cursor:not-allowed}
-button.full{width:100%}
-button.secondary{background:#fff;color:var(--primary);border:1px solid #bfdbfe;min-height:42px;padding:8px 16px;font-size:14px}
-button.secondary:hover{background:#eff6ff}
-input[type=password]{width:100%;min-height:48px;border:1px solid #cbd5e1;border-radius:12px;padding:12px 14px;font-size:16px;font-family:inherit;margin-bottom:12px}
-.drop{display:block;border:2px dashed #93c5fd;border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;background:#f8fbff;transition:.15s}
-.drop:hover,.drop.over{background:#eff6ff;border-color:var(--primary)}
-.drop input{display:none}
-.drop strong{display:block;font-size:16px}
-.drop span{color:var(--muted);font-size:13px}
-.file{display:none;margin-top:12px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;font-size:14px;font-weight:700;direction:ltr;text-align:right;overflow-wrap:anywhere}
-.file.show{display:block}
-#checkBtn{display:none;margin-top:14px}
-#checkBtn.show{display:block}
-.message{border-radius:12px;padding:12px 14px;margin:0 0 12px;font-size:13px;line-height:1.9;overflow-wrap:anywhere}
-.message h3{margin:0 0 4px;font-size:15px}
-.message p{margin:0}
-.message.error{background:#fef2f2;border:1px solid #fecaca;color:var(--err)}
-.message.success{background:#f0fdf4;border:1px solid #bbf7d0;color:var(--ok)}
-.message.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8}
-.message.warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
-.grp{background:#fff;border:1px solid #fde68a;border-radius:10px;margin-top:8px;padding:10px 12px;color:var(--text)}
-.grp .h{font-weight:700;color:#92400e;margin-bottom:4px}
-.kv{direction:ltr;text-align:right;font-family:Arial,sans-serif;font-size:13px}
-.kv b{color:var(--muted);font-weight:700}
-.sub{color:var(--muted);font-size:12px;margin-top:2px;direction:ltr;text-align:right;font-family:Arial,sans-serif}
-.list{max-height:420px;overflow-y:auto;padding-inline-end:4px}
-.hidden{display:none!important}
+html{color-scheme:light}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",Arial,sans-serif;line-height:1.7;font-size:16px}
+.wrap{max-width:860px;margin:0 auto;padding:40px 20px 80px}
+header{margin-bottom:32px}
+h1{font-size:clamp(1.7rem,4vw,2.4rem);line-height:1.25;margin:0 0 10px;font-weight:700;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted);max-width:60ch}
+
+.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:18px}
+.step-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;
+  display:grid;place-items:center;font-weight:600;font-size:.95rem}
+.step.done .num{background:var(--ok)}
+.step-head h2{margin:0;font-size:1.15rem;font-weight:600}
+.need{margin:0 0 14px;color:var(--muted);font-size:.92rem}
+.chips{display:inline-flex;flex-wrap:wrap;gap:6px;vertical-align:middle}
+.chip{background:var(--brand-soft);color:var(--brand-d);padding:1px 10px;border-radius:6px;font-size:.88rem;font-weight:500;direction:ltr;unicode-bidi:isolate}
+
+.drop{display:block;border:2px dashed #b4c3be;border-radius:12px;padding:26px 16px;text-align:center;cursor:pointer;
+  background:#fafbfb;transition:background .15s,border-color .15s}
+.drop:hover,.drop.over{background:var(--brand-soft);border-color:var(--brand)}
+.drop:focus-within{outline:3px solid var(--brand);outline-offset:2px}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.drop strong{display:block;font-weight:600}
+.drop span{color:var(--muted);font-size:.9rem}
+.drop svg{width:34px;height:34px;color:var(--brand);margin-bottom:6px}
+
+.file{display:none;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid #b9dcc4;background:var(--ok-soft);
+  border-radius:12px;padding:12px 14px}
+.file.show{display:flex}
+.file .ico{color:var(--ok);flex:none}
+.file .meta{flex:1;min-width:150px}
+.file .meta b{display:block;font-weight:600;word-break:break-all;direction:ltr;text-align:right}
+.file .meta small{color:var(--muted)}
+.link{background:none;border:0;color:var(--brand);font:inherit;font-weight:600;cursor:pointer;padding:4px 8px;border-radius:6px}
+.link:hover{background:var(--brand-soft)}
+.link:focus-visible,.btn:focus-visible,summary:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+
+.msg{display:none;margin-top:12px;border-radius:10px;padding:11px 14px;background:var(--err-soft);color:var(--err);font-weight:500}
+.msg.show{display:block}
+.msg code{direction:ltr;unicode-bidi:isolate;background:#fff;padding:0 6px;border-radius:4px}
+
+#step2{display:none}
+#step2.show{display:block}
+.actions{display:none;margin:26px 0;text-align:center}
+.actions.show{display:block}
+.btn{font:inherit;font-weight:700;font-size:1.1rem;background:var(--brand);color:#fff;border:0;border-radius:12px;
+  padding:14px 56px;cursor:pointer;box-shadow:0 2px 0 var(--brand-d);transition:background .15s,transform .05s}
+.btn:hover{background:var(--brand-d)}
+.btn:active{transform:translateY(1px);box-shadow:none}
+.btn:disabled{opacity:.6;cursor:wait}
+
+#results{display:none}
+#results.show{display:block}
+.summary{border-radius:14px;padding:18px 20px;margin-bottom:16px;font-weight:600;font-size:1.05rem;display:flex;gap:12px;align-items:center}
+.summary.good{background:var(--ok-soft);color:var(--ok)}
+.summary.bad{background:#fff;border:1px solid var(--line);color:var(--ink)}
+.summary small{display:block;font-weight:400;color:var(--muted)}
+
+details.alert{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden;border-inline-start:6px solid var(--c)}
+details.alert.a1{--c:var(--warn)}
+details.alert.a2{--c:var(--info)}
+details.alert.a3{--c:var(--err)}
+details.alert.clean{--c:var(--ok)}
+summary{list-style:none;cursor:pointer;padding:14px 18px;display:flex;align-items:center;gap:12px;font-weight:600}
+summary::-webkit-details-marker{display:none}
+summary .t{flex:1}
+.count{min-width:34px;text-align:center;padding:1px 10px;border-radius:999px;font-size:.9rem;
+  background:var(--c);color:#fff}
+.alert.clean .count{background:var(--ok)}
+summary::after{content:"";width:9px;height:9px;border-inline-end:2px solid var(--muted);border-bottom:2px solid var(--muted);
+  transform:rotate(45deg);transition:transform .15s;margin-inline-start:4px}
+details[open] summary::after{transform:rotate(-135deg)}
+.alert ul{margin:0;padding:0 18px 14px;list-style:none;max-height:460px;overflow:auto}
+.alert li{padding:10px 0;border-top:1px solid var(--line);font-size:.97rem}
+.alert li:first-child{border-top:0}
+.v{direction:ltr;unicode-bidi:isolate;display:inline-block;background:#eef2f1;border-radius:5px;padding:0 7px;font-weight:600}
+.v.bad{background:var(--err-soft);color:var(--err)}
+.v.good{background:var(--ok-soft);color:var(--ok)}
+.rows{color:var(--muted)}
+.none{padding:0 18px 14px;color:var(--muted);margin:0}
+@media (max-width:520px){.btn{width:100%;padding:14px}.step{padding:16px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<main class="page">
-  <section id="loginCard" class="card">
-    <h1 style="margin-bottom:12px">فحص ملف الإكسل</h1>
-    <p class="hint">اكتب كلمة السر لفتح الصفحة.</p>
-    <div id="loginMsg" class="message hidden" role="status"></div>
-    <form id="loginForm">
-      <input id="pw" type="password" autocomplete="off" placeholder="كلمة السر" required>
-      <button id="loginBtn" class="full" type="submit">دخول</button>
-    </form>
-  </section>
+<div class="wrap">
+  <header>
+    <h1>فحص الأصناف والألوان</h1>
+    <p>ارفع الملف المعتمد أولاً، ثم الملف المراد اختباره، وسيتم فحص الألوان والتكرار تلقائياً داخل المتصفح دون رفع أي بيانات لأي خادم.</p>
+  </header>
 
-  <section id="appCard" class="card hidden">
-    <div class="top">
-      <h1>فحص ملف الإكسل</h1>
-      <button id="tplBtn" class="secondary" type="button">Download template</button>
-    </div>
-    <div class="chips"><span class="chip">Code</span><span class="chip">Color</span><span class="chip">Qty</span></div>
-
-    <label class="drop" id="drop">
-      <input type="file" id="file" accept=".xlsx,.xls,.xlsm,.csv">
-      <strong>اضغط لاختيار ملف أو اسحبه هنا</strong>
-      <span>xlsx / xls / csv</span>
+  <section class="step" id="step1">
+    <div class="step-head"><div class="num">1</div><h2>برجاء رفع الملف الصحيح المعتمد</h2></div>
+    <p class="need">الأعمدة المطلوبة: <span class="chips"><span class="chip">اجمالي الكود الصحيح</span><span class="chip">اجمالي الألوان الصحيحه</span></span></p>
+    <label class="drop" id="drop1">
+      <input type="file" id="file1" accept=".xlsx,.xls,.xlsm,.csv">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+      <strong>اضغط لاختيار الملف أو اسحبه هنا</strong>
+      <span>Excel ‏(.xlsx / .xls) أو CSV</span>
     </label>
-    <div class="file" id="fileInfo"></div>
-    <button id="checkBtn" class="full" type="button">فحص</button>
-
-    <div id="result" style="margin-top:16px" aria-live="polite"></div>
+    <div class="file" id="info1"></div>
+    <div class="msg" id="err1" role="alert"></div>
   </section>
-</main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <section class="step" id="step2">
+    <div class="step-head"><div class="num">2</div><h2>برجاء رفع الملف الذي تريد اختباره</h2></div>
+    <p class="need">الأعمدة المطلوبة: <span class="chips"><span class="chip">Product Number</span><span class="chip">Color</span><span class="chip">Qty</span></span></p>
+    <label class="drop" id="drop2">
+      <input type="file" id="file2" accept=".xlsx,.xls,.xlsm,.csv">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+      <strong>اضغط لاختيار الملف أو اسحبه هنا</strong>
+      <span>Excel ‏(.xlsx / .xls) أو CSV</span>
+    </label>
+    <div class="file" id="info2"></div>
+    <div class="msg" id="err2" role="alert"></div>
+  </section>
+
+  <div class="actions" id="actions"><button class="btn" id="checkBtn" type="button">فحص</button></div>
+
+  <section id="results" aria-live="polite"></section>
+</div>
+
 <script>
-'use strict';
-const API_URL = 'https://script.google.com/macros/s/AKfycbzfbcrBUqJULuQkvgCb_cwc8-VvZl8TyK_ZoFe0MNyN3ZlmOO4QpJEk0_Ly84I7UXUXSQ/exec';
-const REQUIRED = ['Code', 'Color', 'Qty'];
-const TIMEOUT_MS = 90000;
-const $ = id => document.getElementById(id);
-const norm = v => String(v == null ? '' : v).trim().toLowerCase();
-const txt = v => String(v == null ? '' : v).trim();
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+(function(){
+  var REF_COLS = ["اجمالي الكود الصحيح","اجمالي الألوان الصحيحه"];
+  var TEST_COLS = ["Product Number","Color","Qty"];
+  var ref = null, test = null;
 
-let password = '', current = null, busy = false;
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 
-function callServer(action, args) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), TIMEOUT_MS);
-  return fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, args }),
-    signal: ctl.signal
-  }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .finally(() => clearTimeout(t));
-}
+  // تطبيع أسماء الأعمدة (مسافات، همزات، ة/ه، حالة الأحرف)
+  function normHeader(s){
+    return String(s==null?"":s).replace(/[\u064B-\u0652\u0640]/g,"")
+      .replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")
+      .replace(/\s+/g," ").trim().toLowerCase();
+  }
+  function cell(v){ return v==null ? "" : String(v).trim(); }
+  function key(v){ return cell(v).toUpperCase(); }
 
-/* ---------- الدخول ---------- */
-$('loginForm').addEventListener('submit', e => {
-  e.preventDefault();
-  if (busy) return;
-  const value = $('pw').value;
-  if (!value.trim()) return;
-  busy = true;
-  $('loginBtn').disabled = true;
-  $('loginBtn').textContent = 'جارٍ التحقق...';
-  $('loginMsg').className = 'message hidden';
-  callServer('checkerAuth', [value]).then(res => {
-    if (res && res.ok) {
-      password = value;
-      $('pw').value = '';
-      $('loginCard').classList.add('hidden');
-      $('appCard').classList.remove('hidden');
-    } else {
-      showLoginError((res && res.message) || 'كلمة السر غير صحيحة.');
-    }
-  }).catch(() => showLoginError('تعذر الاتصال بالخادم. حاول مرة أخرى.'))
-    .finally(() => { busy = false; $('loginBtn').disabled = false; $('loginBtn').textContent = 'دخول'; });
-});
-function showLoginError(m) {
-  $('loginMsg').className = 'message error';
-  $('loginMsg').textContent = m;
-}
-
-/* ---------- القالب + الملف ---------- */
-$('tplBtn').addEventListener('click', () => {
-  const ws = XLSX.utils.aoa_to_sheet([REQUIRED]);
-  ws['!cols'] = REQUIRED.map(() => ({ wch: 18 }));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-  XLSX.writeFile(wb, 'template.xlsx');
-});
-
-function setFile(f) {
-  if (!f) return;
-  current = f;
-  $('fileInfo').textContent = f.name;
-  $('fileInfo').classList.add('show');
-  $('checkBtn').classList.add('show');
-  $('result').innerHTML = '';
-}
-$('file').addEventListener('change', e => setFile(e.target.files[0]));
-const drop = $('drop');
-['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
-['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', e => setFile(e.dataTransfer.files[0]));
-
-/* ---------- أدوات العرض ---------- */
-function groupDup(recs, keyFn) {
-  const m = new Map();
-  recs.forEach(r => { const k = keyFn(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
-  return [...m.values()].filter(g => g.length > 1);
-}
-const rowsText = rows => rows.join(' ، ');
-const kv = (k, v) => `<span class="kv"><b>${k}:</b> ${esc(v)}</span>`;
-function box(type, title, body) {
-  return `<div class="message ${type}"><h3>${title}</h3>${body || ''}</div>`;
-}
-
-/* ---------- الفحص ---------- */
-$('checkBtn').addEventListener('click', async () => {
-  if (busy || !current) return;
-  busy = true;
-  $('checkBtn').disabled = true;
-  const out = $('result');
-  out.innerHTML = box('info', 'جارٍ فحص الملف...');
-
-  try {
-    const wb = XLSX.read(await current.arrayBuffer(), { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, blankrows: true });
-    const headers = (data[0] || []).map(norm);
-    const idx = {}, missingCols = [];
-    REQUIRED.forEach(c => { const i = headers.indexOf(c.toLowerCase()); i < 0 ? missingCols.push(c) : idx[c] = i; });
-
-    if (missingCols.length) {
-      out.innerHTML = box('error', 'أعمدة ناقصة', '<ul>' + missingCols.map(c => `<li>عمود <b dir="ltr">${c}</b> ناقص</li>`).join('') + '</ul>');
-      return;
-    }
-
-    const recs = [];
-    for (let r = 1; r < data.length; r++) {
-      const code = txt(data[r][idx.Code]), color = txt(data[r][idx.Color]), qty = txt(data[r][idx.Qty]);
-      if (!code && !color && !qty) continue;
-      recs.push({ row: r + 1, code, color, qty });
-    }
-
-    let html = box('success', 'الأعمدة الثلاثة موجودة', `<p>تم فحص ${recs.length} صف.</p>`);
-    let alerts = 0;
-
-    // 1) تكرار Code + Color + Qty
-    const full = groupDup(recs, r => [norm(r.code), norm(r.color), norm(r.qty)].join('\u0001'));
-    if (full.length) {
-      alerts++;
-      html += box('warn', 'تنبيه: يوجد تكرار في اللون والكود والكمية',
-        full.map(g => `<div class="grp"><div class="h">يوجد تكرار في الصفوف: ${rowsText(g.map(x => x.row))}</div>
-          ${kv('Code', g[0].code)} &nbsp; ${kv('Color', g[0].color)} &nbsp; ${kv('Qty', g[0].qty)}</div>`).join(''));
-    }
-
-    // 2) تكرار Code + Color
-    const pair = groupDup(recs, r => [norm(r.code), norm(r.color)].join('\u0001'));
-    if (pair.length) {
-      alerts++;
-      html += box('warn', 'تنبيه: يوجد تكرار في اللون والكود',
-        pair.map(g => `<div class="grp"><div class="h">يوجد تكرار في الصفوف: ${rowsText(g.map(x => x.row))}</div>
-          ${kv('Code', g[0].code)} &nbsp; ${kv('Color', g[0].color)}
-          <div class="sub">Qty: ${esc(g.map(x => x.qty || '—').join(' / '))}</div></div>`).join(''));
-    }
-
-    // 3) المقارنة مع السيستم
-    const uniq = new Map(), skipped = [];
-    recs.forEach(r => {
-      if (!r.code || !r.color) { skipped.push(r.row); return; }
-      const k = norm(r.code) + '\u0001' + norm(r.color);
-      if (!uniq.has(k)) uniq.set(k, { code: r.code, color: r.color, rows: [] });
-      uniq.get(k).rows.push(r.row);
-    });
-    const list = [...uniq.values()];
-
-    if (list.length) {
-      out.innerHTML = html + box('info', 'جارٍ مقارنة الأكواد والألوان مع السيستم...');
-      try {
-        const res = await callServer('checkerCompare', [password, list.map(u => [u.code, u.color])]);
-        if (!res || res.ok !== true) throw new Error((res && res.message) || 'رفض الخادم الطلب.');
-
-        if (res.missing.length) {
-          alerts++;
-          html += box('warn', `تنبيه: ${res.missing.length} من الألوان غير موجودة على السيستم`,
-            `<div class="list">` + res.missing.map(m => {
-              const u = list[m.i];
-              const rows = `<div class="sub">الصفوف: ${rowsText(u.rows)}</div>`;
-              return m.reason === 'CODE_NOT_FOUND'
-                ? `<div class="grp"><div class="h">الكود ${esc(u.code)} غير موجود على السيستم</div>${kv('Color', u.color)}${rows}</div>`
-                : `<div class="grp"><div class="h">اللون ${esc(u.color)} موجود في الملف المرفوع وليس موجود على السيستم</div>
-                    ${kv('Code', u.code)}${rows}<div class="sub">الألوان الموجودة على السيستم: ${esc((m.known || []).join(' ، '))}</div></div>`;
-            }).join('') + `</div>`);
-        } else {
-          html += box('success', 'كل الألوان موجودة على السيستم', `<p>تمت المقارنة مع ${res.warehouses} مخزن.</p>`);
-        }
-      } catch (err) {
-        alerts++;
-        if (/كلمة السر/.test(err.message)) {
-          html += box('error', 'تعذرت المقارنة مع السيستم', '<p>كلمة السر لم تعد صالحة. أعد تحميل الصفحة وسجّل الدخول.</p>');
-        } else {
-          html += box('error', 'تعذرت المقارنة مع السيستم', `<p>${esc(err.message || 'خطأ في الاتصال')}</p>`);
+  // يبحث في كل الشيتات عن صف العناوين المطلوب
+  function readTable(wb, required){
+    var want = required.map(normHeader), firstHeaders = [];
+    for(var s=0;s<wb.SheetNames.length;s++){
+      var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[s]],{header:1,defval:"",raw:true});
+      for(var i=0;i<Math.min(rows.length,30);i++){
+        var heads = rows[i].map(normHeader), idx = want.map(function(w){return heads.indexOf(w);});
+        if(s===0 && i===0) firstHeaders = heads;
+        if(idx.every(function(x){return x>=0;})){
+          return {ok:true, rows:rows, header:i, idx:idx};
         }
       }
     }
-
-    if (skipped.length) {
-      html += box('info', 'صفوف لم تدخل المقارنة مع السيستم', `<p>الصفوف التي ينقصها Code أو Color: ${rowsText(skipped)}</p>`);
-    }
-    if (alerts === 0) html += box('success', 'لا يوجد أي تنبيهات');
-    out.innerHTML = html;
-  } catch (e) {
-    out.innerHTML = box('error', 'تعذر قراءة الملف', '<p>تأكد أن الملف بصيغة إكسل أو CSV سليمة.</p>');
-  } finally {
-    busy = false;
-    $('checkBtn').disabled = false;
+    var missing = required.filter(function(c){return firstHeaders.indexOf(normHeader(c))<0;});
+    return {ok:false, missing: missing.length?missing:required};
   }
-});
+
+  function readFile(file, required, done){
+    var r = new FileReader();
+    r.onload = function(e){
+      try{
+        var wb = XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+        done(readTable(wb, required));
+      }catch(err){ done({ok:false, broken:true}); }
+    };
+    r.onerror = function(){ done({ok:false, broken:true}); };
+    r.readAsArrayBuffer(file);
+  }
+
+  function showError(n, res){
+    var el = $("err"+n);
+    if(res.broken){ el.textContent = "تعذر قراءة الملف. تأكد أنه ملف Excel سليم وحاول مرة أخرى."; }
+    else{
+      el.innerHTML = "الملف لا يحتوي على الأعمدة المطلوبة. الأعمدة الناقصة: " +
+        res.missing.map(function(m){return "<code>"+esc(m)+"</code>";}).join(" ، ") + ". ارفع الملف الصحيح.";
+    }
+    el.classList.add("show");
+  }
+
+  function setInfo(n, file, count){
+    var el = $("info"+n);
+    el.innerHTML = '<svg class="ico" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>'
+      + '<div class="meta"><b>'+esc(file.name)+'</b><small>الأعمدة المطلوبة موجودة · '+count+' صف</small></div>'
+      + '<button type="button" class="link" data-replace="'+n+'">تغيير الملف</button>';
+    el.classList.add("show");
+    $("drop"+n).style.display = "none";
+    $("step"+n).classList.add("done");
+  }
+  function resetStep(n){
+    $("info"+n).classList.remove("show"); $("err"+n).classList.remove("show");
+    $("drop"+n).style.display = ""; $("step"+n).classList.remove("done");
+    $("file"+n).value = "";
+  }
+  function refresh(){
+    $("step2").classList.toggle("show", !!ref);
+    $("actions").classList.toggle("show", !!(ref && test));
+    $("results").classList.remove("show");
+  }
+
+  function handle(n, file){
+    if(!file) return;
+    $("err"+n).classList.remove("show");
+    var cols = n===1 ? REF_COLS : TEST_COLS;
+    readFile(file, cols, function(res){
+      if(!res.ok){
+        if(n===1) ref=null; else test=null;
+        $("info"+n).classList.remove("show"); $("step"+n).classList.remove("done"); $("drop"+n).style.display="";
+        showError(n,res); refresh(); return;
+      }
+      var body = res.rows.slice(res.header+1), data = [];
+      body.forEach(function(r,i){
+        var a = r[res.idx[0]], b = r[res.idx[1]], c = res.idx[2]!==undefined ? r[res.idx[2]] : "";
+        if(cell(a)==="" && cell(b)==="" && cell(c)==="") return;
+        data.push({row: res.header+2+i, a:cell(a), b:cell(b), c:cell(c)});
+      });
+      if(n===1) ref = data; else test = data;
+      setInfo(n,file,data.length); refresh();
+    });
+  }
+
+  [1,2].forEach(function(n){
+    var drop = $("drop"+n), input = $("file"+n);
+    input.addEventListener("change", function(){ handle(n, input.files[0]); });
+    ["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over");});});
+    ["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over");});});
+    drop.addEventListener("drop", function(e){ if(e.dataTransfer.files[0]) handle(n, e.dataTransfer.files[0]); });
+  });
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-replace]"); if(!b) return;
+    var n = +b.getAttribute("data-replace");
+    if(n===1){ ref=null; resetStep(1); } else { test=null; resetStep(2); }
+    refresh();
+  });
+
+  function rowsText(list){
+    return list.length===1 ? "الصف "+list[0] : "الصفوف "+list.join("، ");
+  }
+
+  function analyze(){
+    // الألوان الصحيحة لكل كود
+    var good = {}, goodDisplay = {};
+    ref.forEach(function(r){
+      var p = key(r.a); if(!p) return;
+      if(!good[p]){ good[p] = {}; goodDisplay[p] = {name:r.a, colors:[]}; }
+      var c = key(r.b);
+      if(!good[p][c]){ good[p][c] = true; goodDisplay[p].colors.push(r.b===""?"(فارغ)":r.b); }
+    });
+
+    var pcMap = {}, pcqMap = {}, missing = [];
+    test.forEach(function(r){
+      var p = key(r.a), c = key(r.b), q = key(r.c);
+      var k1 = p+"\u0001"+c, k2 = k1+"\u0001"+q;
+      (pcMap[k1] = pcMap[k1] || {p:r.a||"(فارغ)", c:r.b||"(فارغ)", rows:[]}).rows.push(r.row);
+      (pcqMap[k2] = pcqMap[k2] || {p:r.a||"(فارغ)", c:r.b||"(فارغ)", q:r.c===""?"(فارغ)":r.c, rows:[]}).rows.push(r.row);
+
+      if(!good[p]){
+        missing.push({row:r.row, p:r.a||"(فارغ)", c:r.b||"(فارغ)", unknown:true});
+      } else if(!good[p][c]){
+        missing.push({row:r.row, p:r.a||"(فارغ)", c:r.b||"(فارغ)", allowed:goodDisplay[p].colors});
+      }
+    });
+    function dups(m){ return Object.keys(m).map(function(k){return m[k];}).filter(function(x){return x.rows.length>1;}); }
+    return {d1:dups(pcMap), d2:dups(pcqMap), miss:missing};
+  }
+
+  function v(t,cls){ return '<span class="v '+(cls||"")+'">'+esc(t)+'</span>'; }
+
+  function section(cls, title, items){
+    if(!items.length){
+      return '<details class="alert clean"><summary><span class="t">'+title+'</span><span class="count">0</span></summary><p class="none">لا توجد ملاحظات.</p></details>';
+    }
+    return '<details class="alert '+cls+'" open><summary><span class="t">'+title+'</span><span class="count">'+items.length+'</span></summary><ul>'
+      + items.join("") + '</ul></details>';
+  }
+
+  function render(a){
+    var total = a.d1.length + a.d2.length + a.miss.length;
+    var html = total===0
+      ? '<div class="summary good">الملف سليم. لا توجد تكرارات، وكل الألوان موجودة في الملف المعتمد.</div>'
+      : '<div class="summary bad"><div>تم العثور على ملاحظات تحتاج مراجعة<small>تم فحص '+test.length+' صف من الملف المختبَر</small></div></div>';
+
+    html += section("a1","تكرار في Product Number و Color", a.d1.map(function(x){
+      return '<li>فيه تكرار في Product Number '+v(x.p)+' و Color '+v(x.c)+' <span class="rows">في '+rowsText(x.rows)+'</span></li>';
+    }));
+    html += section("a2","تكرار في Product Number و Color و Qty", a.d2.map(function(x){
+      return '<li>فيه تكرار في Product Number '+v(x.p)+' و Color '+v(x.c)+' و Qty '+v(x.q)+' <span class="rows">في '+rowsText(x.rows)+'</span></li>';
+    }));
+    html += section("a3","ألوان غير موجودة في الشيت الصحيح", a.miss.map(function(x){
+      if(x.unknown){
+        return '<li>البرودكت '+v(x.p,"bad")+' <span class="rows">(الصف '+x.row+')</span> موجود في الشيت الذي تريد اختباره ولا يوجد في الشيت الصحيح نهائياً.</li>';
+      }
+      return '<li>اللون '+v(x.c,"bad")+' التابع للبرودكت '+v(x.p)+' <span class="rows">(الصف '+x.row+')</span> موجود في الشيت الذي تريد اختباره ولا يوجد في الشيت الصحيح، حيث إن الألوان الموجودة في الشيت الصحيح لهذا البرودكت هي: '
+        + x.allowed.map(function(c){return v(c,"good");}).join(" ") + '</li>';
+    }));
+
+    var box = $("results"); box.innerHTML = html; box.classList.add("show");
+    box.scrollIntoView({behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
+  }
+
+  $("checkBtn").addEventListener("click", function(){
+    var btn = this; btn.disabled = true;
+    setTimeout(function(){ render(analyze()); btn.disabled = false; }, 30);
+  });
+})();
 </script>
 </body>
 </html>
