@@ -22,9 +22,19 @@ html{color-scheme:light}
 body{margin:0;background:var(--paper);color:var(--ink);
   font-family:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",Arial,sans-serif;line-height:1.7;font-size:16px}
 .wrap{max-width:860px;margin:0 auto;padding:40px 20px 80px}
-header{margin-bottom:32px}
+header{margin-bottom:24px}
 h1{font-size:clamp(1.7rem,4vw,2.4rem);line-height:1.25;margin:0 0 10px;font-weight:700;letter-spacing:-.01em}
 header p{margin:0;color:var(--muted);max-width:60ch}
+
+.sheet{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-radius:12px;padding:12px 16px;margin-bottom:18px;
+  background:var(--info-soft);color:var(--info);font-weight:500}
+.sheet.ok{background:var(--ok-soft);color:var(--ok)}
+.sheet.bad{background:var(--err-soft);color:var(--err)}
+.sheet .txt{flex:1;min-width:200px}
+.sheet small{display:block;font-weight:400;color:var(--muted)}
+.dot{flex:none;width:10px;height:10px;border-radius:50%;background:currentColor}
+.sheet.load .dot{animation:pulse 1s infinite alternate}
+@keyframes pulse{from{opacity:.25}to{opacity:1}}
 
 .step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:18px}
 .step-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
@@ -60,8 +70,6 @@ header p{margin:0;color:var(--muted);max-width:60ch}
 .msg.show{display:block}
 .msg code{direction:ltr;unicode-bidi:isolate;background:#fff;padding:0 6px;border-radius:4px}
 
-#step2{display:none}
-#step2.show{display:block}
 .actions{display:none;margin:26px 0;text-align:center}
 .actions.show{display:block}
 .btn{font:inherit;font-weight:700;font-size:1.1rem;background:var(--brand);color:#fff;border:0;border-radius:12px;
@@ -100,31 +108,24 @@ details[open] summary::after{transform:rotate(-135deg)}
 .rows{color:var(--muted)}
 .none{padding:0 18px 14px;color:var(--muted);margin:0}
 @media (max-width:520px){.btn{width:100%;padding:14px}.step{padding:16px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>فحص الأصناف والألوان</h1>
-    <p>ارفع الملف المعتمد أولاً، ثم الملف المراد اختباره، وسيتم فحص الألوان والتكرار تلقائياً داخل المتصفح دون رفع أي بيانات لأي خادم.</p>
+    <p>ارفع الملف المراد اختباره فقط. تتم المقارنة مباشرة مع شيت الأصناف المعتمدة على Google Sheets، وبأحدث نسخة منه وقت الضغط على فحص.</p>
   </header>
 
-  <section class="step" id="step1">
-    <div class="step-head"><div class="num">1</div><h2>برجاء رفع الملف الصحيح المعتمد</h2></div>
-    <p class="need">الأعمدة المطلوبة: <span class="chips"><span class="chip">اجمالي الكود الصحيح</span><span class="chip">اجمالي الألوان الصحيحه</span></span></p>
-    <label class="drop" id="drop1">
-      <input type="file" id="file1" accept=".xlsx,.xls,.xlsm,.csv">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
-      <strong>اضغط لاختيار الملف أو اسحبه هنا</strong>
-      <span>Excel ‏(.xlsx / .xls) أو CSV</span>
-    </label>
-    <div class="file" id="info1"></div>
-    <div class="msg" id="err1" role="alert"></div>
-  </section>
+  <div class="sheet load" id="sheetBox" role="status" aria-live="polite">
+    <span class="dot"></span>
+    <div class="txt" id="sheetTxt">جاري الاتصال بالشيت المعتمد...</div>
+    <button type="button" class="link" id="retryBtn" style="display:none">إعادة المحاولة</button>
+  </div>
 
   <section class="step" id="step2">
-    <div class="step-head"><div class="num">2</div><h2>برجاء رفع الملف الذي تريد اختباره</h2></div>
+    <div class="step-head"><div class="num">1</div><h2>برجاء رفع الملف الذي تريد اختباره</h2></div>
     <p class="need">الأعمدة المطلوبة: <span class="chips"><span class="chip">Product Number</span><span class="chip">Color</span><span class="chip">Qty</span></span> أو <span class="chips"><span class="chip">Item</span><span class="chip">Color</span><span class="chip">Qty</span></span></p>
     <label class="drop" id="drop2">
       <input type="file" id="file2" accept=".xlsx,.xls,.xlsm,.csv">
@@ -137,20 +138,23 @@ details[open] summary::after{transform:rotate(-135deg)}
   </section>
 
   <div class="actions" id="actions"><button class="btn" id="checkBtn" type="button">فحص</button></div>
+  <div class="msg" id="errRun" role="alert"></div>
 
   <section id="results" aria-live="polite"></section>
 </div>
 
 <script>
 (function(){
+  // رابط الشيت المعتمد (يجب أن يكون مشاركاً "أي شخص لديه الرابط - عارض")
+  var SHEET_ID = "1icsPetFUSuFYAPqhcLr7_kJ7rjsZ_0sEgNLNs96veJ4";
+  var SHEET_GID = "0";
   var REF_COLS = ["اجمالي الكود الصحيح","اجمالي الألوان الصحيحه"];
   var TEST_SETS = [["Product Number","Color","Qty"],["Item","Color","Qty"]];
-  var ref = null, test = null;
+  var ref = null, test = null, refTime = null;
 
   function $(id){return document.getElementById(id);}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 
-  // تطبيع أسماء الأعمدة (مسافات، همزات، ة/ه، حالة الأحرف)
   function normHeader(s){
     return String(s==null?"":s).replace(/[\u064B-\u0652\u0640]/g,"")
       .replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")
@@ -159,7 +163,6 @@ details[open] summary::after{transform:rotate(-135deg)}
   function cell(v){ return v==null ? "" : String(v).trim(); }
   function key(v){ return cell(v).toUpperCase(); }
 
-  // يبحث في كل الشيتات عن صف العناوين المطلوب
   function readTable(wb, required){
     var want = required.map(normHeader), firstHeaders = [];
     for(var s=0;s<wb.SheetNames.length;s++){
@@ -176,100 +179,148 @@ details[open] summary::after{transform:rotate(-135deg)}
     return {ok:false, missing: missing.length?missing:required};
   }
 
-  // sets: قائمة بالأشكال المقبولة للأعمدة؛ يتم تجربتها بالترتيب
-  function readFile(file, sets, done){
-    var r = new FileReader();
-    r.onload = function(e){
-      try{
-        var wb = XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-        var first = null;
-        for(var i=0;i<sets.length;i++){
-          var res = readTable(wb, sets[i]);
-          if(res.ok){ done(res); return; }
-          if(!first) first = res;
-        }
-        first.sets = sets;
-        done(first);
-      }catch(err){ done({ok:false, broken:true}); }
-    };
-    r.onerror = function(){ done({ok:false, broken:true}); };
-    r.readAsArrayBuffer(file);
-  }
-
-  function showError(n, res){
-    var el = $("err"+n);
-    if(res.broken){ el.textContent = "تعذر قراءة الملف. تأكد أنه ملف Excel سليم وحاول مرة أخرى."; }
-    else if(res.sets && res.sets.length>1){
-      el.innerHTML = "الملف لا يحتوي على الأعمدة المطلوبة. لازم يحتوي على: <code>Product Number</code> أو <code>Item</code> ، و <code>Color</code> ، و <code>Qty</code>. ارفع الملف الصحيح.";
+  function tryRead(wb, sets){
+    var first = null;
+    for(var i=0;i<sets.length;i++){
+      var res = readTable(wb, sets[i]);
+      if(res.ok) return res;
+      if(!first) first = res;
     }
-    else{
-      el.innerHTML = "الملف لا يحتوي على الأعمدة المطلوبة. الأعمدة الناقصة: " +
-        res.missing.map(function(m){return "<code>"+esc(m)+"</code>";}).join(" ، ") + ". ارفع الملف الصحيح.";
-    }
-    el.classList.add("show");
+    first.sets = sets;
+    return first;
   }
 
-  function setInfo(n, file, count){
-    var el = $("info"+n);
-    el.innerHTML = '<svg class="ico" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>'
-      + '<div class="meta"><b>'+esc(file.name)+'</b><small>الأعمدة المطلوبة موجودة · '+count+' صف</small></div>'
-      + '<button type="button" class="link" data-replace="'+n+'">تغيير الملف</button>';
-    el.classList.add("show");
-    $("drop"+n).style.display = "none";
-    $("step"+n).classList.add("done");
-  }
-  function resetStep(n){
-    $("info"+n).classList.remove("show"); $("err"+n).classList.remove("show");
-    $("drop"+n).style.display = ""; $("step"+n).classList.remove("done");
-    $("file"+n).value = "";
-  }
-  function refresh(){
-    $("step2").classList.toggle("show", !!ref);
-    $("actions").classList.toggle("show", !!(ref && test));
-    $("results").classList.remove("show");
+  function toData(res){
+    var data = [];
+    res.rows.slice(res.header+1).forEach(function(r,i){
+      var a = r[res.idx[0]], b = r[res.idx[1]], c = res.idx[2]!==undefined ? r[res.idx[2]] : "";
+      if(cell(a)==="" && cell(b)==="" && cell(c)==="") return;
+      data.push({row: res.header+2+i, a:cell(a), b:cell(b), c:cell(c)});
+    });
+    return data;
   }
 
-  function handle(n, file){
-    if(!file) return;
-    $("err"+n).classList.remove("show");
-    var cols = n===1 ? [REF_COLS] : TEST_SETS;
-    readFile(file, cols, function(res){
-      if(!res.ok){
-        if(n===1) ref=null; else test=null;
-        $("info"+n).classList.remove("show"); $("step"+n).classList.remove("done"); $("drop"+n).style.display="";
-        showError(n,res); refresh(); return;
-      }
-      var body = res.rows.slice(res.header+1), data = [];
-      body.forEach(function(r,i){
-        var a = r[res.idx[0]], b = r[res.idx[1]], c = res.idx[2]!==undefined ? r[res.idx[2]] : "";
-        if(cell(a)==="" && cell(b)==="" && cell(c)==="") return;
-        data.push({row: res.header+2+i, a:cell(a), b:cell(b), c:cell(c)});
-      });
-      if(n===1) ref = data; else test = data;
-      setInfo(n,file,data.length); refresh();
+  // ===== جلب الشيت المعتمد من Google Sheets =====
+  function sheetUrls(){
+    var t = "&_=" + Date.now();
+    return [
+      "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+SHEET_GID+t,
+      "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/export?format=csv&gid="+SHEET_GID+t
+    ];
+  }
+  function fetchText(urls, i){
+    return fetch(urls[i], {cache:"no-store"}).then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.text();
+    }).catch(function(err){
+      if(i+1<urls.length) return fetchText(urls, i+1);
+      throw err;
+    });
+  }
+  function loadRef(){
+    return fetchText(sheetUrls(), 0).then(function(text){
+      if(/^\s*<(!doctype|html)/i.test(text)) throw new Error("not-shared");
+      var wb = XLSX.read(text, {type:"string", raw:true});
+      var res = readTable(wb, REF_COLS);
+      if(!res.ok) throw new Error("columns");
+      var data = toData(res).map(function(r){ return {row:r.row, a:r.a, b:r.b}; });
+      ref = data; refTime = new Date();
+      return data;
     });
   }
 
-  [1,2].forEach(function(n){
-    var drop = $("drop"+n), input = $("file"+n);
-    input.addEventListener("change", function(){ handle(n, input.files[0]); });
-    ["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over");});});
-    ["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over");});});
-    drop.addEventListener("drop", function(e){ if(e.dataTransfer.files[0]) handle(n, e.dataTransfer.files[0]); });
-  });
+  function setSheet(state, html, retry){
+    var box = $("sheetBox");
+    box.className = "sheet " + state;
+    $("sheetTxt").innerHTML = html;
+    $("retryBtn").style.display = retry ? "" : "none";
+  }
+  function timeStr(d){
+    return d.toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  }
+  function connect(){
+    setSheet("load","جاري الاتصال بالشيت المعتمد...",false);
+    return loadRef().then(function(data){
+      setSheet("ok","متصل بالشيت المعتمد<small>"+data.length+" صف · آخر تحديث للقراءة "+timeStr(refTime)+"</small>",false);
+      refresh();
+    }).catch(function(err){
+      ref = null;
+      var m = err && err.message;
+      var why = m==="not-shared" ? "تأكد أن الشيت مشارَك بصلاحية «أي شخص لديه الرابط – عارض»."
+        : m==="columns" ? "الشيت لا يحتوي على الأعمدة <code>اجمالي الكود الصحيح</code> و <code>اجمالي الألوان الصحيحه</code>."
+        : "تأكد من الاتصال بالإنترنت وأن الصفحة مفتوحة من متصفح عادي (وليس من داخل معاينة أو نافذة مقيّدة).";
+      setSheet("bad","تعذر الاتصال بالشيت المعتمد.<small>"+why+"</small>",true);
+      refresh();
+    });
+  }
+
+  // ===== رفع الملف المراد اختباره =====
+  function showError(res){
+    var el = $("err2");
+    if(res.broken){ el.textContent = "تعذر قراءة الملف. تأكد أنه ملف Excel سليم وحاول مرة أخرى."; }
+    else{
+      el.innerHTML = "الملف لا يحتوي على الأعمدة المطلوبة. لازم يحتوي على: <code>Product Number</code> أو <code>Item</code> ، و <code>Color</code> ، و <code>Qty</code>. ارفع الملف الصحيح.";
+    }
+    el.classList.add("show");
+  }
+  function setInfo(file, count){
+    var el = $("info2");
+    el.innerHTML = '<svg class="ico" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>'
+      + '<div class="meta"><b>'+esc(file.name)+'</b><small>الأعمدة المطلوبة موجودة · '+count+' صف</small></div>'
+      + '<button type="button" class="link" data-replace="1">تغيير الملف</button>';
+    el.classList.add("show");
+    $("drop2").style.display = "none";
+    $("step2").classList.add("done");
+  }
+  function resetStep(){
+    $("info2").classList.remove("show"); $("err2").classList.remove("show");
+    $("drop2").style.display = ""; $("step2").classList.remove("done");
+    $("file2").value = "";
+  }
+  function refresh(){
+    $("actions").classList.toggle("show", !!(ref && test));
+    $("results").classList.remove("show");
+    $("errRun").classList.remove("show");
+  }
+
+  function handle(file){
+    if(!file) return;
+    $("err2").classList.remove("show");
+    var r = new FileReader();
+    r.onload = function(e){
+      var res;
+      try{
+        var wb = XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+        res = tryRead(wb, TEST_SETS);
+      }catch(err){ res = {ok:false, broken:true}; }
+      if(!res.ok){
+        test = null;
+        $("info2").classList.remove("show"); $("step2").classList.remove("done"); $("drop2").style.display="";
+        showError(res); refresh(); return;
+      }
+      test = toData(res);
+      setInfo(file, test.length); refresh();
+    };
+    r.onerror = function(){ showError({broken:true}); };
+    r.readAsArrayBuffer(file);
+  }
+
+  var drop = $("drop2"), input = $("file2");
+  input.addEventListener("change", function(){ handle(input.files[0]); });
+  ["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over");});});
+  ["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over");});});
+  drop.addEventListener("drop", function(e){ if(e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]); });
   document.addEventListener("click", function(e){
     var b = e.target.closest("[data-replace]"); if(!b) return;
-    var n = +b.getAttribute("data-replace");
-    if(n===1){ ref=null; resetStep(1); } else { test=null; resetStep(2); }
-    refresh();
+    test = null; resetStep(); refresh();
   });
+  $("retryBtn").addEventListener("click", connect);
 
+  // ===== التحليل =====
   function rowsText(list){
     return list.length===1 ? "الصف "+list[0] : "الصفوف "+list.join("، ");
   }
-
   function analyze(){
-    // الألوان الصحيحة لكل كود
     var good = {}, goodDisplay = {};
     ref.forEach(function(r){
       var p = key(r.a); if(!p) return;
@@ -277,14 +328,12 @@ details[open] summary::after{transform:rotate(-135deg)}
       var c = key(r.b);
       if(!good[p][c]){ good[p][c] = true; goodDisplay[p].colors.push(r.b===""?"(فارغ)":r.b); }
     });
-
     var pcMap = {}, pcqMap = {}, missing = [];
     test.forEach(function(r){
       var p = key(r.a), c = key(r.b), q = key(r.c);
       var k1 = p+"\u0001"+c, k2 = k1+"\u0001"+q;
       (pcMap[k1] = pcMap[k1] || {p:r.a||"(فارغ)", c:r.b||"(فارغ)", rows:[]}).rows.push(r.row);
       (pcqMap[k2] = pcqMap[k2] || {p:r.a||"(فارغ)", c:r.b||"(فارغ)", q:r.c===""?"(فارغ)":r.c, rows:[]}).rows.push(r.row);
-
       if(!good[p]){
         missing.push({row:r.row, p:r.a||"(فارغ)", c:r.b||"(فارغ)", unknown:true});
       } else if(!good[p][c]){
@@ -296,7 +345,6 @@ details[open] summary::after{transform:rotate(-135deg)}
   }
 
   function v(t,cls){ return '<span class="v '+(cls||"")+'">'+esc(t)+'</span>'; }
-
   function section(cls, title, items){
     if(!items.length){
       return '<details class="alert clean"><summary><span class="t">'+title+'</span><span class="count">0</span></summary><p class="none">لا توجد ملاحظات.</p></details>';
@@ -307,9 +355,10 @@ details[open] summary::after{transform:rotate(-135deg)}
 
   function render(a){
     var total = a.d1.length + a.d2.length + a.miss.length;
+    var note = 'تمت المقارنة مع الشيت المعتمد ('+ref.length+' صف) وقت '+timeStr(refTime);
     var html = total===0
-      ? '<div class="summary good">الملف سليم. لا توجد تكرارات، وكل الألوان موجودة في الملف المعتمد.</div>'
-      : '<div class="summary bad"><div>تم العثور على ملاحظات تحتاج مراجعة<small>تم فحص '+test.length+' صف من الملف المختبَر</small></div></div>';
+      ? '<div class="summary good"><div>الملف سليم. لا توجد تكرارات، وكل الألوان موجودة في الشيت المعتمد.<small>'+note+'</small></div></div>'
+      : '<div class="summary bad"><div>تم العثور على ملاحظات تحتاج مراجعة<small>تم فحص '+test.length+' صف من الملف المختبَر · '+note+'</small></div></div>';
 
     html += section("a1","تكرار في Product Number و Color", a.d1.map(function(x){
       return '<li>فيه تكرار في Product Number '+v(x.p)+' و Color '+v(x.c)+' <span class="rows">في '+rowsText(x.rows)+'</span></li>';
@@ -329,10 +378,22 @@ details[open] summary::after{transform:rotate(-135deg)}
     box.scrollIntoView({behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
   }
 
+  // عند الضغط على فحص: نجلب أحدث نسخة من الشيت أولاً ثم نقارن
   $("checkBtn").addEventListener("click", function(){
-    var btn = this; btn.disabled = true;
-    setTimeout(function(){ render(analyze()); btn.disabled = false; }, 30);
+    var btn = this; btn.disabled = true; $("errRun").classList.remove("show");
+    setSheet("load","جاري تحميل أحدث نسخة من الشيت المعتمد...",false);
+    loadRef().then(function(data){
+      setSheet("ok","متصل بالشيت المعتمد<small>"+data.length+" صف · آخر تحديث للقراءة "+timeStr(refTime)+"</small>",false);
+      render(analyze());
+    }).catch(function(){
+      var el = $("errRun");
+      el.textContent = "تعذر تحميل أحدث نسخة من الشيت المعتمد، لذلك لم يتم الفحص. تحقق من الاتصال وحاول مرة أخرى.";
+      el.classList.add("show");
+      setSheet("bad","تعذر الاتصال بالشيت المعتمد.",true);
+    }).then(function(){ btn.disabled = false; });
   });
+
+  connect();
 })();
 </script>
 </body>
