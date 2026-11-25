@@ -125,7 +125,7 @@ details[open] summary::after{transform:rotate(-135deg)}
 
   <section class="step" id="step2">
     <div class="step-head"><div class="num">2</div><h2>برجاء رفع الملف الذي تريد اختباره</h2></div>
-    <p class="need">الأعمدة المطلوبة: <span class="chips"><span class="chip">Product Number</span><span class="chip">Color</span><span class="chip">Qty</span></span></p>
+    <p class="need">الأعمدة المطلوبة: <span class="chips"><span class="chip">Product Number</span><span class="chip">Color</span><span class="chip">Qty</span></span> أو <span class="chips"><span class="chip">Item</span><span class="chip">Color</span><span class="chip">Qty</span></span></p>
     <label class="drop" id="drop2">
       <input type="file" id="file2" accept=".xlsx,.xls,.xlsm,.csv">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
@@ -144,7 +144,7 @@ details[open] summary::after{transform:rotate(-135deg)}
 <script>
 (function(){
   var REF_COLS = ["اجمالي الكود الصحيح","اجمالي الألوان الصحيحه"];
-  var TEST_COLS = ["Product Number","Color","Qty"];
+  var TEST_SETS = [["Product Number","Color","Qty"],["Item","Color","Qty"]];
   var ref = null, test = null;
 
   function $(id){return document.getElementById(id);}
@@ -176,12 +176,20 @@ details[open] summary::after{transform:rotate(-135deg)}
     return {ok:false, missing: missing.length?missing:required};
   }
 
-  function readFile(file, required, done){
+  // sets: قائمة بالأشكال المقبولة للأعمدة؛ يتم تجربتها بالترتيب
+  function readFile(file, sets, done){
     var r = new FileReader();
     r.onload = function(e){
       try{
         var wb = XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-        done(readTable(wb, required));
+        var first = null;
+        for(var i=0;i<sets.length;i++){
+          var res = readTable(wb, sets[i]);
+          if(res.ok){ done(res); return; }
+          if(!first) first = res;
+        }
+        first.sets = sets;
+        done(first);
       }catch(err){ done({ok:false, broken:true}); }
     };
     r.onerror = function(){ done({ok:false, broken:true}); };
@@ -191,6 +199,9 @@ details[open] summary::after{transform:rotate(-135deg)}
   function showError(n, res){
     var el = $("err"+n);
     if(res.broken){ el.textContent = "تعذر قراءة الملف. تأكد أنه ملف Excel سليم وحاول مرة أخرى."; }
+    else if(res.sets && res.sets.length>1){
+      el.innerHTML = "الملف لا يحتوي على الأعمدة المطلوبة. لازم يحتوي على: <code>Product Number</code> أو <code>Item</code> ، و <code>Color</code> ، و <code>Qty</code>. ارفع الملف الصحيح.";
+    }
     else{
       el.innerHTML = "الملف لا يحتوي على الأعمدة المطلوبة. الأعمدة الناقصة: " +
         res.missing.map(function(m){return "<code>"+esc(m)+"</code>";}).join(" ، ") + ". ارفع الملف الصحيح.";
@@ -221,7 +232,7 @@ details[open] summary::after{transform:rotate(-135deg)}
   function handle(n, file){
     if(!file) return;
     $("err"+n).classList.remove("show");
-    var cols = n===1 ? REF_COLS : TEST_COLS;
+    var cols = n===1 ? [REF_COLS] : TEST_SETS;
     readFile(file, cols, function(res){
       if(!res.ok){
         if(n===1) ref=null; else test=null;
